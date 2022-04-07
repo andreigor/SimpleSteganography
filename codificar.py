@@ -50,7 +50,7 @@ def encrypt_image_bit_plane(input_image: iio.core.util.Array , ascii_text: np.ar
     remaining_text: the remaining message that wasn't able to fit in a single image bit plane
     """
     unpacked_bits_image = np.unpackbits(input_image, axis = 1)
-    bit_plane_mapping = {7: 0, 6: 1, 5: 2, 4:3, 3:4, 2:5, 1:6, 0:7}
+    bit_plane_mapping = {7: '0', 6: '1', 5: '2', 4: '3', 3: '4', 2: '5' , 1: '6', 0: '7'}
     
     # temp variable that will be reshaped to store ascii_text
     temp = unpacked_bits_image[:, bitplane::8, :].copy()
@@ -59,14 +59,14 @@ def encrypt_image_bit_plane(input_image: iio.core.util.Array , ascii_text: np.ar
     # check to see if message fits in bit_plane
     image_available_space = np.prod(input_image.shape)
     if image_available_space < len(ascii_text):
-        print("Warning: message didn't fit entirely in bit plane {}, with {} message bits remaining.\n".format(bit_plane_mapping[bitplane], image_available_space - len(ascii_text)))
+        print("Warning: message didn't fit entirely in bit plane {}, with {} message bits remaining.".format(bit_plane_mapping[bitplane], len(ascii_text) - image_available_space))
         # filling available space
         temp[:] = ascii_text[:image_available_space]
         remaining_text = ascii_text[image_available_space:]
     else:
         print('Sucess: message fits entirely in bit plane {}'.format(bit_plane_mapping[bitplane]))
         temp[:len(ascii_text)] = ascii_text[:]
-        remaining_text = -1
+        remaining_text = np.array([-1])
     
     # returning temp original shape and assigning it to the original image
     temp = temp.reshape(unpacked_bits_image[:, bitplane::8, :].shape)
@@ -79,15 +79,11 @@ def encrypt_image_bit_plane(input_image: iio.core.util.Array , ascii_text: np.ar
     
     
 def main():
-    print(len(sys.argv))
-    print(sys.argv[0])
-    print(sys.argv[1])
-    print(sys.argv[2])
-    print(sys.argv[3])
-
     if len(sys.argv) != 5:
         raise InputParameterError('Error in codificar.py:\n <P1> <P2> <P3> <P4>\nP1: input image\nP2: input text\nP3: bits plane\nP4:output image')
 
+    if sys.argv[3] not in ['0','1','2']:
+        raise InputParameterError('bit plane must be integer value in the set [0,1,2]')
     # reading input text and input image
     input_image = iio.imread(sys.argv[1])
     secret_message = read_input_txt(sys.argv[2])
@@ -99,8 +95,9 @@ def main():
     output_image, remaining_text = encrypt_image_bit_plane(input_image, secret_message, chosen_bit_plane)
 
     # filling remaining bit planes (if necessary) in a least significance bit order
-    while(remaining_text != -1):
+    while(remaining_text[0] != -1):
         try:
+            print('Trying to fit remaining message in bit plane {} ...'.format((next(iter(bit_plane_mapping)))))
             output_image, remaining_text = encrypt_image_bit_plane(output_image, remaining_text, bit_plane_mapping.pop(list(bit_plane_mapping.keys())[0]))
         except IndexError:
             print('Warning: 3 bit planes were not enough to encrypt the entire message.')

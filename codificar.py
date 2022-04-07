@@ -88,7 +88,9 @@ def main():
     input_image = iio.imread(sys.argv[1])
     secret_message = read_input_txt(sys.argv[2])
 
-    bit_plane_mapping = {'0': 7, '1': 6, '2': 5, '3': 4, '4': 3, '5': 2, '6': 1, '7': 0}
+    # bit_plane_mapping = {'0': 7, '1': 6, '2': 5, '3': 4, '4': 3, '5': 2, '6': 1, '7': 0}
+    bit_plane_mapping = {'0': 7, '1': 6, '2': 5}
+
     chosen_bit_plane = bit_plane_mapping.pop(sys.argv[3])
 
     # filling bit plane chosen by user
@@ -99,11 +101,13 @@ def main():
         try:
             print('Trying to fit remaining message in bit plane {} ...'.format((next(iter(bit_plane_mapping)))))
             output_image, remaining_text = encrypt_image_bit_plane(output_image, remaining_text, bit_plane_mapping.pop(list(bit_plane_mapping.keys())[0]))
-        except IndexError:
-            print('Warning: 3 bit planes were not enough to encrypt the entire message.')
+        except StopIteration:
+            print('3 bit planes were not enough to encrypt the entire message!')
+            break
         
     
     # saving output image
+    print("Saving output image as {}...".format(sys.argv[4]))
     iio.imwrite(sys.argv[4], output_image)
     
 

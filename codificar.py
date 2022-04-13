@@ -28,6 +28,7 @@ def read_input_txt(input_txt):
         data=myfile.readlines()
 
     data = ''.join(data)
+    data = data + '\0' # adding EOF signal
     bits_secret_message = text2bits(data)
     arr_secret_message = np.array([int(char) for char in bits_secret_message], dtype = np.uint8)
     
@@ -80,17 +81,16 @@ def encrypt_image_bit_plane(input_image: iio.core.util.Array , ascii_text: np.ar
     
 def main():
     if len(sys.argv) != 5:
-        raise InputParameterError('Error in codificar.py:\n <P1> <P2> <P3> <P4>\nP1: input image\nP2: input text\nP3: bits plane\nP4:output image')
+        raise InputParameterError('Error in codificar.py:\n <P1> <P2> <P3> <P4>\nP1: Input image\nP2: Input text\nP3: Bits plane\nP4:Output image')
 
     if sys.argv[3] not in ['0','1','2']:
         raise InputParameterError('bit plane must be integer value in the set [0,1,2]')
+
     # reading input text and input image
     input_image = iio.imread(sys.argv[1])
     secret_message = read_input_txt(sys.argv[2])
 
-    # bit_plane_mapping = {'0': 7, '1': 6, '2': 5, '3': 4, '4': 3, '5': 2, '6': 1, '7': 0}
     bit_plane_mapping = {'0': 7, '1': 6, '2': 5}
-
     chosen_bit_plane = bit_plane_mapping.pop(sys.argv[3])
 
     # filling bit plane chosen by user
@@ -99,6 +99,7 @@ def main():
     # filling remaining bit planes (if necessary) in a least significance bit order
     while(remaining_text[0] != -1):
         try:
+            print('##################################################')
             print('Trying to fit remaining message in bit plane {} ...'.format((next(iter(bit_plane_mapping)))))
             output_image, remaining_text = encrypt_image_bit_plane(output_image, remaining_text, bit_plane_mapping.pop(list(bit_plane_mapping.keys())[0]))
         except StopIteration:
